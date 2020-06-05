@@ -9,7 +9,7 @@ export type PlaceDocument = mongoose.Document & {
     lat: Number;
     lng: Number;
   };
-  creator: string;
+  creator: mongoose.Types.ObjectId;
 };
 
 const placeSchema = new mongoose.Schema({
@@ -21,7 +21,7 @@ const placeSchema = new mongoose.Schema({
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
   },
-  creator: { type: String, required: true },
+  creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
 });
 
 export const Place = mongoose.model<PlaceDocument>('Place', placeSchema);

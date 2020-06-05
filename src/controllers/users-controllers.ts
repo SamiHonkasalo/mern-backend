@@ -1,23 +1,21 @@
 import { RequestHandler } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import { validationResult } from 'express-validator';
 
 import { HttpError } from '../models/http-error';
-import { User } from '../models/user';
+import { User, UserDocument } from '../models/user';
+import HttpStatusCode from '../models/http-status-code';
 
-let DUMMY_USERS: User[] = [
-  {
-    id: 'u1',
-    name: 'Sami Honkasalo',
-    email: 'test@test.com',
-    password: 'testing',
-  },
-];
-
-export const getUsers: RequestHandler = (req, res, next) => {
-  res.status(200).json({ users: DUMMY_USERS });
+export const getUsers: RequestHandler = async (req, res, next) => {
+  let users;
+  try {
+    users = await User.find({}, '-password');
+  } catch (e) {
+    return next(new HttpError('Error finding users from database', 500));
+  }
+  res.json({ users: users.map((u) => u.toObject({ getters: true })) });
 };
-export const signup: RequestHandler = (req, res, next) => {
+
+export const signup: RequestHandler = async (req, res, next) => {
   const err = validationResult(req);
   if (!err.isEmpty()) {
     next(new HttpError('Invalid data', 422));
@@ -25,30 +23,54 @@ export const signup: RequestHandler = (req, res, next) => {
   }
   const { name, email, password } = req.body;
 
-  if (DUMMY_USERS.find((u) => u.email === email)) {
-    next(new HttpError('Email already in use', 422));
-    return;
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email });
+  } catch (e) {
+    return next(new HttpError('Error finding users from database', 500));
+  }
+  if (existingUser) {
+    return next(
+      new HttpError('User already exists', HttpStatusCode.UNPROCESSABLE_ENTITY)
+    );
   }
 
-  const newUser = { id: uuidv4(), name, email, password };
+  const user = new User({
+    name,
+    email,
+    image:
+      'https://images.unsplash.com/photo-1561948955-570b270e7c36?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=518&q=80',
+    password,
+    places: [],
+  });
 
-  DUMMY_USERS.push(newUser);
-  res.status(201).json({ user: newUser });
-};
-export const login: RequestHandler = (req, res, next) => {
-  const { email, password } = req.body;
-
-  const user = DUMMY_USERS.find(
-    (u) => u.email === email && u.password === password
-  );
-  if (!user) {
-    next(
+  try {
+    user.save();
+  } catch (e) {
+    return next(
       new HttpError(
-        'Error logging in, please check your email and password',
-        401
+        'Error signing up the user',
+        HttpStatusCode.INTERNAL_SERVER_ERROR
       )
     );
-  } else {
-    res.json({ message: 'Logged in!' });
   }
+  res.status(201).json({ user: user.toObject({ getters: true }) });
+};
+export const login: RequestHandler = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email });
+  } catch (e) {
+    return next(new HttpError('Error finding users from database', 500));
+  }
+  if (existingUser && existingUser.password !== password) {
+    return next(
+      new HttpError('Invalid credentials', HttpStatusCode.UNAUTHORIZED)
+    );
+  } else if (!existingUser) {
+    return next(new HttpError('User not found', HttpStatusCode.NOT_FOUND));
+  }
+  res.json({ message: 'Logged in!' });
 };

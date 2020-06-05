@@ -29,6 +29,7 @@ mongoose
   .connect(config.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    useCreateIndex: true,
   })
   .then(() => app.listen(config.PORT))
   .catch((err) => console.log(err));

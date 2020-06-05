@@ -5,10 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deletePlace = exports.updatePlace = exports.createPlace = exports.getPlacesByUserId = exports.getPlaceById = void 0;
 const express_validator_1 = require("express-validator");
+const mongoose_1 = __importDefault(require("mongoose"));
 const http_error_1 = require("../models/http-error");
 const location_1 = __importDefault(require("../util/location"));
 const place_1 = require("../models/place");
 const http_status_code_1 = __importDefault(require("../models/http-status-code"));
+const user_1 = require("../models/user");
 exports.getPlaceById = async (req, res, next) => {
     const placeId = req.params.placeId;
     let place;
@@ -25,17 +27,20 @@ exports.getPlaceById = async (req, res, next) => {
 };
 exports.getPlacesByUserId = async (req, res, next) => {
     const userId = req.params.userId;
-    let userPlaces;
+    let userWithPlaces;
     try {
-        userPlaces = await place_1.Place.find({ creator: userId });
+        userWithPlaces = await user_1.User.findById(userId).populate('places');
     }
     catch (e) {
         return next(new http_error_1.HttpError('Error finding places from database', 500));
     }
-    if (!userPlaces || userPlaces.length === 0) {
+    if (!userWithPlaces || userWithPlaces.places.length === 0) {
         return next(new http_error_1.HttpError('Could not find places for the provided user id', 404));
     }
-    res.json({ places: userPlaces.map((p) => p.toObject({ getters: true })) });
+    res.json({
+        // @ts-ignore
+        places: userWithPlaces.places.map((p) => p.toObject({ getters: true })),
+    });
 };
 exports.createPlace = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
@@ -60,8 +65,23 @@ exports.createPlace = async (req, res, next) => {
         image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
         creator,
     });
+    let user;
     try {
-        await createdPlace.save();
+        user = await user_1.User.findById(creator);
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Could not find user for the provided id', http_status_code_1.default.INTERNAL_SERVER_ERROR));
+    }
+    if (!user) {
+        return next(new http_error_1.HttpError('Could not find user for the provided id', http_status_code_1.default.NOT_FOUND));
+    }
+    try {
+        const sess = await mongoose_1.default.startSession();
+        sess.startTransaction();
+        await createdPlace.save({ session: sess });
+        user.places.push(createdPlace.id);
+        await user.save({ session: sess });
+        sess.commitTransaction();
     }
     catch (e) {
         return next(new http_error_1.HttpError('Failed to create new place', http_status_code_1.default.INTERNAL_SERVER_ERROR));
@@ -99,6 +119,7 @@ exports.updatePlace = async (req, res, next) => {
 exports.deletePlace = async (req, res, next) => {
     const placeId = req.params.placeId;
     let place;
+    let user;
     try {
         place = await place_1.Place.findById(placeId);
     }
@@ -106,10 +127,25 @@ exports.deletePlace = async (req, res, next) => {
         return next(new http_error_1.HttpError('Error finding place from database', 500));
     }
     if (!place) {
-        return next(new http_error_1.HttpError('Could not find a place for the provided id', 404));
+        return next(new http_error_1.HttpError('Could not find a place with the provided id', 404));
     }
     try {
-        await place.remove();
+        user = await user_1.User.findById(place.creator);
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Could not find a user with the creator id', 500));
+    }
+    if (!user) {
+        return next(new http_error_1.HttpError('Could not find a user with the creator id', 404));
+    }
+    try {
+        const sess = await mongoose_1.default.startSession();
+        sess.startTransaction();
+        // @ts-ignore
+        await place.remove({ session: sess });
+        user.places.pull(place);
+        await user.save({ session: sess });
+        sess.commitTransaction();
     }
     catch (e) {
         return next(new http_error_1.HttpError('Error removing the place from the database', 500));

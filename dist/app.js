@@ -28,6 +28,7 @@ mongoose_1.default
     .connect(config_1.default.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    useCreateIndex: true,
 })
     .then(() => app.listen(config_1.default.PORT))
     .catch((err) => console.log(err));

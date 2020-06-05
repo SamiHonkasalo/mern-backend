@@ -1,42 +1,69 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = exports.signup = exports.getUsers = void 0;
-const uuid_1 = require("uuid");
 const express_validator_1 = require("express-validator");
 const http_error_1 = require("../models/http-error");
-let DUMMY_USERS = [
-    {
-        id: 'u1',
-        name: 'Sami Honkasalo',
-        email: 'test@test.com',
-        password: 'testing',
-    },
-];
-exports.getUsers = (req, res, next) => {
-    res.status(200).json({ users: DUMMY_USERS });
+const user_1 = require("../models/user");
+const http_status_code_1 = __importDefault(require("../models/http-status-code"));
+exports.getUsers = async (req, res, next) => {
+    let users;
+    try {
+        users = await user_1.User.find({}, '-password');
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding users from database', 500));
+    }
+    res.json({ users: users.map((u) => u.toObject({ getters: true })) });
 };
-exports.signup = (req, res, next) => {
+exports.signup = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
     if (!err.isEmpty()) {
         next(new http_error_1.HttpError('Invalid data', 422));
         return;
     }
     const { name, email, password } = req.body;
-    if (DUMMY_USERS.find((u) => u.email === email)) {
-        next(new http_error_1.HttpError('Email already in use', 422));
-        return;
+    let existingUser;
+    try {
+        existingUser = await user_1.User.findOne({ email });
     }
-    const newUser = { id: uuid_1.v4(), name, email, password };
-    DUMMY_USERS.push(newUser);
-    res.status(201).json({ user: newUser });
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding users from database', 500));
+    }
+    if (existingUser) {
+        return next(new http_error_1.HttpError('User already exists', http_status_code_1.default.UNPROCESSABLE_ENTITY));
+    }
+    const user = new user_1.User({
+        name,
+        email,
+        image: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=518&q=80',
+        password,
+        places: [],
+    });
+    try {
+        user.save();
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error signing up the user', http_status_code_1.default.INTERNAL_SERVER_ERROR));
+    }
+    res.status(201).json({ user: user.toObject({ getters: true }) });
 };
-exports.login = (req, res, next) => {
+exports.login = async (req, res, next) => {
     const { email, password } = req.body;
-    const user = DUMMY_USERS.find((u) => u.email === email && u.password === password);
-    if (!user) {
-        next(new http_error_1.HttpError('Error logging in, please check your email and password', 401));
+    let existingUser;
+    try {
+        existingUser = await user_1.User.findOne({ email });
     }
-    else {
-        res.json({ message: 'Logged in!' });
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding users from database', 500));
     }
+    if (existingUser && existingUser.password !== password) {
+        return next(new http_error_1.HttpError('Invalid credentials', http_status_code_1.default.UNAUTHORIZED));
+    }
+    else if (!existingUser) {
+        return next(new http_error_1.HttpError('User not found', http_status_code_1.default.NOT_FOUND));
+    }
+    res.json({ message: 'Logged in!' });
 };
