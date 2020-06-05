@@ -4,41 +4,38 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deletePlace = exports.updatePlace = exports.createPlace = exports.getPlacesByUserId = exports.getPlaceById = void 0;
-const uuid_1 = require("uuid");
 const express_validator_1 = require("express-validator");
 const http_error_1 = require("../models/http-error");
 const location_1 = __importDefault(require("../util/location"));
-let DUMMY_PLACES = [];
-DUMMY_PLACES.push({
-    id: 'p10',
-    title: 'Koti',
-    description: 'Kiva paikka',
-    location: {
-        lat: 62.2803635,
-        lng: 25.7734192,
-    },
-    address: 'Heinämutka 5 A 17',
-    creator: 'u1',
-});
-exports.getPlaceById = (req, res, next) => {
+const place_1 = require("../models/place");
+const http_status_code_1 = __importDefault(require("../models/http-status-code"));
+exports.getPlaceById = async (req, res, next) => {
     const placeId = req.params.placeId;
-    const place = DUMMY_PLACES.find((p) => p.id === placeId);
+    let place;
+    try {
+        place = await place_1.Place.findById(placeId);
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding place from database', 500));
+    }
     if (!place) {
-        next(new http_error_1.HttpError('Could not find a place for the provided id', 404));
+        return next(new http_error_1.HttpError('Could not find a place for the provided id', 404));
     }
-    else {
-        res.json({ place });
-    }
+    res.json({ place: place.toObject({ getters: true }) });
 };
-exports.getPlacesByUserId = (req, res, next) => {
+exports.getPlacesByUserId = async (req, res, next) => {
     const userId = req.params.userId;
-    const userPlaces = DUMMY_PLACES.filter((p) => p.creator === userId);
+    let userPlaces;
+    try {
+        userPlaces = await place_1.Place.find({ creator: userId });
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding places from database', 500));
+    }
     if (!userPlaces || userPlaces.length === 0) {
-        next(new http_error_1.HttpError('Could not find places for the provided user id', 404));
+        return next(new http_error_1.HttpError('Could not find places for the provided user id', 404));
     }
-    else {
-        res.json({ userPlaces });
-    }
+    res.json({ places: userPlaces.map((p) => p.toObject({ getters: true })) });
 };
 exports.createPlace = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
@@ -55,18 +52,23 @@ exports.createPlace = async (req, res, next) => {
         next(e);
         return;
     }
-    const createdPlace = {
-        id: uuid_1.v4(),
+    const createdPlace = new place_1.Place({
         title,
         description,
-        location,
         address,
+        location,
+        image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
         creator,
-    };
-    DUMMY_PLACES.push(createdPlace);
+    });
+    try {
+        await createdPlace.save();
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Failed to create new place', http_status_code_1.default.INTERNAL_SERVER_ERROR));
+    }
     res.status(201).json({ place: createdPlace });
 };
-exports.updatePlace = (req, res, next) => {
+exports.updatePlace = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
     if (!err.isEmpty()) {
         next(new http_error_1.HttpError('Invalid data', 422));
@@ -74,28 +76,43 @@ exports.updatePlace = (req, res, next) => {
     }
     const { title, description } = req.body;
     const placeId = req.params.placeId;
-    let placeToUpdate;
-    const place = DUMMY_PLACES.find((p) => p.id === placeId);
+    let place;
+    try {
+        place = await place_1.Place.findById(placeId);
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding place from database', 500));
+    }
     if (!place) {
-        next(new http_error_1.HttpError('Unable to find a place with the id', 404));
+        return next(new http_error_1.HttpError('Could not find a place for the provided id', 404));
     }
-    else {
-        placeToUpdate = { ...place };
-        const placeInd = DUMMY_PLACES.findIndex((p) => p.id === placeId);
-        placeToUpdate.title = title;
-        placeToUpdate.description = description;
-        DUMMY_PLACES[placeInd] = placeToUpdate;
-        res.status(200).json({ place: placeToUpdate });
+    try {
+        place.title = title;
+        place.description = description;
+        await place.save();
     }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error updating the place to the database', 500));
+    }
+    res.status(200).json({ place: place.toObject({ getters: true }) });
 };
-exports.deletePlace = (req, res, next) => {
+exports.deletePlace = async (req, res, next) => {
     const placeId = req.params.placeId;
-    const place = DUMMY_PLACES.find((p) => p.id === placeId);
+    let place;
+    try {
+        place = await place_1.Place.findById(placeId);
+    }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error finding place from database', 500));
+    }
     if (!place) {
-        next(new http_error_1.HttpError('Unable to find a place with the id', 404));
+        return next(new http_error_1.HttpError('Could not find a place for the provided id', 404));
     }
-    else {
-        DUMMY_PLACES = DUMMY_PLACES.filter((p) => p.id !== placeId);
-        res.status(200).json({ message: `Deleted place with id: ${placeId}` });
+    try {
+        await place.remove();
     }
+    catch (e) {
+        return next(new http_error_1.HttpError('Error removing the place from the database', 500));
+    }
+    res.status(200).json({ message: `Deleted place with id: ${placeId}` });
 };
