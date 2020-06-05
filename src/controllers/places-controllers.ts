@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { validationResult } from 'express-validator';
 
 import { Place } from '../models/place';
 import { HttpError } from '../models/http-error';
@@ -38,6 +39,12 @@ export const getPlacesByUserId: RequestHandler = (req, res, next) => {
 };
 
 export const createPlace: RequestHandler = (req, res, next) => {
+  const err = validationResult(req);
+  if (!err.isEmpty()) {
+    next(new HttpError('Invalid data', 422));
+    return;
+  }
+
   const { title, description, location, address, creator } = req.body;
   const createdPlace: Place = {
     id: uuidv4(),
@@ -54,6 +61,11 @@ export const createPlace: RequestHandler = (req, res, next) => {
 };
 
 export const updatePlace: RequestHandler = (req, res, next) => {
+  const err = validationResult(req);
+  if (!err.isEmpty()) {
+    next(new HttpError('Invalid data', 422));
+    return;
+  }
   const { title, description } = req.body;
   const placeId = req.params.placeId;
 

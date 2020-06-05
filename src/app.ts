@@ -1,14 +1,16 @@
 import express, { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 
-import placesRouter from './routes/places-routes';
+import placesRoutes from './routes/places-routes';
+import usersRoutes from './routes/users-routes';
 import { HttpError } from './models/http-error';
 
 const app = express();
 
 app.use(bodyParser.json());
 
-app.use('/api/places', placesRouter);
+app.use('/api/places', placesRoutes);
+app.use('/api/users', usersRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new HttpError('Unknown route', 404));

@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ApiError = void 0;
-class ApiError extends Error {
+exports.HttpError = void 0;
+class HttpError extends Error {
     constructor(message, code) {
         super(message); // 'Error' breaks prototype chain here
+        this.code = code;
         Object.setPrototypeOf(this, new.target.prototype); // restore prototype chain
     }
 }
-exports.ApiError = ApiError;
+exports.HttpError = HttpError;
