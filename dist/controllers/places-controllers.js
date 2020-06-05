@@ -1,9 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deletePlace = exports.updatePlace = exports.createPlace = exports.getPlacesByUserId = exports.getPlaceById = void 0;
 const uuid_1 = require("uuid");
 const express_validator_1 = require("express-validator");
 const http_error_1 = require("../models/http-error");
+const location_1 = __importDefault(require("../util/location"));
 let DUMMY_PLACES = [];
 DUMMY_PLACES.push({
     id: 'p10',
@@ -36,13 +40,21 @@ exports.getPlacesByUserId = (req, res, next) => {
         res.json({ userPlaces });
     }
 };
-exports.createPlace = (req, res, next) => {
+exports.createPlace = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
     if (!err.isEmpty()) {
         next(new http_error_1.HttpError('Invalid data', 422));
         return;
     }
-    const { title, description, location, address, creator } = req.body;
+    const { title, description, address, creator } = req.body;
+    let location;
+    try {
+        location = await location_1.default(address);
+    }
+    catch (e) {
+        next(e);
+        return;
+    }
     const createdPlace = {
         id: uuid_1.v4(),
         title,

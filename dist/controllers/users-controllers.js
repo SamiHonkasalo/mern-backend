@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = exports.signup = exports.getUsers = void 0;
 const uuid_1 = require("uuid");
+const express_validator_1 = require("express-validator");
 const http_error_1 = require("../models/http-error");
 let DUMMY_USERS = [
     {
@@ -15,6 +16,11 @@ exports.getUsers = (req, res, next) => {
     res.status(200).json({ users: DUMMY_USERS });
 };
 exports.signup = (req, res, next) => {
+    const err = express_validator_1.validationResult(req);
+    if (!err.isEmpty()) {
+        next(new http_error_1.HttpError('Invalid data', 422));
+        return;
+    }
     const { name, email, password } = req.body;
     if (DUMMY_USERS.find((u) => u.email === email)) {
         next(new http_error_1.HttpError('Email already in use', 422));

@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { validationResult } from 'express-validator';
 
 import { HttpError } from '../models/http-error';
 import { User } from '../models/user';
@@ -17,6 +18,11 @@ export const getUsers: RequestHandler = (req, res, next) => {
   res.status(200).json({ users: DUMMY_USERS });
 };
 export const signup: RequestHandler = (req, res, next) => {
+  const err = validationResult(req);
+  if (!err.isEmpty()) {
+    next(new HttpError('Invalid data', 422));
+    return;
+  }
   const { name, email, password } = req.body;
 
   if (DUMMY_USERS.find((u) => u.email === email)) {

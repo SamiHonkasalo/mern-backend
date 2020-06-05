@@ -4,6 +4,7 @@ import { validationResult } from 'express-validator';
 
 import { Place } from '../models/place';
 import { HttpError } from '../models/http-error';
+import getCoordsForAddress from '../util/location';
 
 let DUMMY_PLACES: Place[] = [];
 DUMMY_PLACES.push({
@@ -38,14 +39,23 @@ export const getPlacesByUserId: RequestHandler = (req, res, next) => {
   }
 };
 
-export const createPlace: RequestHandler = (req, res, next) => {
+export const createPlace: RequestHandler = async (req, res, next) => {
   const err = validationResult(req);
   if (!err.isEmpty()) {
     next(new HttpError('Invalid data', 422));
     return;
   }
 
-  const { title, description, location, address, creator } = req.body;
+  const { title, description, address, creator } = req.body;
+  let location;
+
+  try {
+    location = await getCoordsForAddress(address);
+  } catch (e) {
+    next(e);
+    return;
+  }
+
   const createdPlace: Place = {
     id: uuidv4(),
     title,
