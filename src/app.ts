@@ -6,7 +6,13 @@ import { HttpError } from './models/http-error';
 
 const app = express();
 
+app.use(bodyParser.json());
+
 app.use('/api/places', placesRouter);
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  next(new HttpError('Unknown route', 404));
+});
 
 app.use((error: HttpError, req: Request, res: Response, next: NextFunction) => {
   if (res.headersSent) {
