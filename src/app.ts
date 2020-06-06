@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
+import cors from 'cors';
 
 import placesRoutes from './routes/places-routes';
 import usersRoutes from './routes/users-routes';
@@ -10,6 +11,7 @@ import config from './util/config';
 const app = express();
 
 app.use(bodyParser.json());
+app.use(cors());
 
 app.use('/api/places', placesRoutes);
 app.use('/api/users', usersRoutes);
