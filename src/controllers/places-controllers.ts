@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
+import fs from 'fs';
 
 import { HttpError } from '../models/http-error';
 import getCoordsForAddress from '../util/location';
@@ -67,8 +68,7 @@ export const createPlace: RequestHandler = async (req, res, next) => {
     description,
     address,
     location,
-    image:
-      'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
+    image: req.file.path,
     creator,
   });
 
@@ -157,6 +157,7 @@ export const deletePlace: RequestHandler = async (req, res, next) => {
       new HttpError('Could not find a place with the provided id', 404)
     );
   }
+  const imagePath = place.image;
   try {
     user = await User.findById(place.creator);
   } catch (e) {
@@ -182,5 +183,8 @@ export const deletePlace: RequestHandler = async (req, res, next) => {
       new HttpError('Error removing the place from the database', 500)
     );
   }
+  fs.unlink(imagePath, (err) => {
+    console.log(err);
+  });
   res.status(200).json({ message: `Deleted place with id: ${placeId}` });
 };

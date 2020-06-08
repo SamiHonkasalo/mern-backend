@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 
 import placesRoutes from './routes/places-routes';
 import usersRoutes from './routes/users-routes';
@@ -11,6 +13,7 @@ import config from './util/config';
 const app = express();
 
 app.use(bodyParser.json());
+app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 app.use(cors());
 
 app.use('/api/places', placesRoutes);
@@ -21,6 +24,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use((error: HttpError, req: Request, res: Response, next: NextFunction) => {
+  if (req.file) {
+    fs.unlink(req.file.path, (err) => {
+      console.log(err);
+    });
+  }
   if (res.headersSent) {
     return next(error);
   }

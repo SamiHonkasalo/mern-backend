@@ -38,8 +38,7 @@ export const signup: RequestHandler = async (req, res, next) => {
   const user = new User({
     name,
     email,
-    image:
-      'https://images.unsplash.com/photo-1561948955-570b270e7c36?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=518&q=80',
+    image: req.file.path,
     password,
     places: [],
   });

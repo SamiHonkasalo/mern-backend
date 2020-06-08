@@ -14,7 +14,7 @@ const fileUpload = multer({
   limits: { fileSize: 500000 },
   storage: multer.diskStorage({
     destination: (req, file, callback) => {
-      callback(null, '../uploads/images');
+      callback(null, 'uploads/images');
     },
 
     filename: (req, file, callback) => {

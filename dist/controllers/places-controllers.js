@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deletePlace = exports.updatePlace = exports.createPlace = exports.getPlacesByUserId = exports.getPlaceById = void 0;
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
+const fs_1 = __importDefault(require("fs"));
 const http_error_1 = require("../models/http-error");
 const location_1 = __importDefault(require("../util/location"));
 const place_1 = require("../models/place");
@@ -62,7 +63,7 @@ exports.createPlace = async (req, res, next) => {
         description,
         address,
         location,
-        image: 'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
+        image: req.file.path,
         creator,
     });
     let user;
@@ -129,6 +130,7 @@ exports.deletePlace = async (req, res, next) => {
     if (!place) {
         return next(new http_error_1.HttpError('Could not find a place with the provided id', 404));
     }
+    const imagePath = place.image;
     try {
         user = await user_1.User.findById(place.creator);
     }
@@ -150,5 +152,8 @@ exports.deletePlace = async (req, res, next) => {
     catch (e) {
         return next(new http_error_1.HttpError('Error removing the place from the database', 500));
     }
+    fs_1.default.unlink(imagePath, (err) => {
+        console.log(err);
+    });
     res.status(200).json({ message: `Deleted place with id: ${placeId}` });
 };
