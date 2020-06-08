@@ -72,5 +72,8 @@ export const login: RequestHandler = async (req, res, next) => {
   } else if (!existingUser) {
     return next(new HttpError('User not found', HttpStatusCode.NOT_FOUND));
   }
-  res.json({ message: 'Logged in!' });
+  res.json({
+    message: 'Logged in!',
+    user: existingUser.toObject({ getters: true }),
+  });
 };

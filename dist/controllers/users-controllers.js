@@ -65,5 +65,8 @@ exports.login = async (req, res, next) => {
     else if (!existingUser) {
         return next(new http_error_1.HttpError('User not found', http_status_code_1.default.NOT_FOUND));
     }
-    res.json({ message: 'Logged in!' });
+    res.json({
+        message: 'Logged in!',
+        user: existingUser.toObject({ getters: true }),
+    });
 };

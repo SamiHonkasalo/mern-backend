@@ -10,7 +10,7 @@ let router = express_1.default.Router();
 router.get('/', users_controllers_1.getUsers);
 router.post('/signup', [
     express_validator_1.check('name').not().isEmpty(),
-    express_validator_1.check('email').normalizeEmail().isEmail(),
+    express_validator_1.check('email').normalizeEmail({ gmail_remove_dots: false }).isEmail(),
     express_validator_1.check('password').isLength({ min: 5 }),
 ], users_controllers_1.signup);
 router.post('/login', users_controllers_1.login);
