@@ -9,12 +9,15 @@ import {
 import { check } from 'express-validator';
 
 import fileUpload from '../middleware/file-upload';
+import checkAuth from '../middleware/check-auth';
 
 let router = express.Router();
 
 router.get('/:placeId', getPlaceById);
 
 router.get('/user/:userId', getPlacesByUserId);
+
+router.use(checkAuth);
 
 router.post(
   '/',
