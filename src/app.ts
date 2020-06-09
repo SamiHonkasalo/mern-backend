@@ -9,6 +9,7 @@ import placesRoutes from './routes/places-routes';
 import usersRoutes from './routes/users-routes';
 import { HttpError } from './models/http-error';
 import config from './util/config';
+import HttpStatusCode from './models/http-status-code';
 
 const app = express();
 
@@ -32,7 +33,13 @@ app.use((error: HttpError, req: Request, res: Response, next: NextFunction) => {
   if (res.headersSent) {
     return next(error);
   }
-  res.status(error.code || 500);
+  let defaultCode = error.code || 500;
+  // If code is found in httpstatus codes, add it as the status, otherwise add 500
+  if (Object.values(HttpStatusCode).includes(defaultCode.toString())) {
+    res.status(defaultCode);
+  } else {
+    res.status(500);
+  }
   res.json({ message: error.message || 'An unknown error occurred' });
 });
 mongoose

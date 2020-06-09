@@ -54,7 +54,7 @@ export const createPlace: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  const { title, description, address, creator } = req.body;
+  const { title, description, address } = req.body;
   let location;
 
   try {
@@ -69,12 +69,13 @@ export const createPlace: RequestHandler = async (req, res, next) => {
     address,
     location,
     image: req.file.path,
-    creator,
+    creator: req.userData.userId,
   });
 
   let user;
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
+    console.log(user);
   } catch (e) {
     return next(
       new HttpError(
@@ -115,6 +116,7 @@ export const createPlace: RequestHandler = async (req, res, next) => {
 export const updatePlace: RequestHandler = async (req, res, next) => {
   const err = validationResult(req);
   if (!err.isEmpty()) {
+    console.log(err);
     next(new HttpError('Invalid data', 422));
     return;
   }
@@ -132,6 +134,15 @@ export const updatePlace: RequestHandler = async (req, res, next) => {
       new HttpError('Could not find a place for the provided id', 404)
     );
   }
+  if (place.creator.toString() !== req.userData.userId.toString()) {
+    return next(
+      new HttpError(
+        'User is not the creator of this place',
+        HttpStatusCode.UNAUTHORIZED
+      )
+    );
+  }
+
   try {
     place.title = title;
     place.description = description;
@@ -168,6 +179,14 @@ export const deletePlace: RequestHandler = async (req, res, next) => {
   if (!user) {
     return next(
       new HttpError('Could not find a user with the creator id', 404)
+    );
+  }
+  if (place.creator.toString() !== req.userData.userId.toString()) {
+    return next(
+      new HttpError(
+        'User is not the creator of this place',
+        HttpStatusCode.UNAUTHORIZED
+      )
     );
   }
   try {

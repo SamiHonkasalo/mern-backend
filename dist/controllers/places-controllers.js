@@ -49,7 +49,7 @@ exports.createPlace = async (req, res, next) => {
         next(new http_error_1.HttpError('Invalid data', 422));
         return;
     }
-    const { title, description, address, creator } = req.body;
+    const { title, description, address } = req.body;
     let location;
     try {
         location = await location_1.default(address);
@@ -64,11 +64,12 @@ exports.createPlace = async (req, res, next) => {
         address,
         location,
         image: req.file.path,
-        creator,
+        creator: req.userData.userId,
     });
     let user;
     try {
-        user = await user_1.User.findById(creator);
+        user = await user_1.User.findById(req.userData.userId);
+        console.log(user);
     }
     catch (e) {
         return next(new http_error_1.HttpError('Could not find user for the provided id', http_status_code_1.default.INTERNAL_SERVER_ERROR));
@@ -92,6 +93,7 @@ exports.createPlace = async (req, res, next) => {
 exports.updatePlace = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
     if (!err.isEmpty()) {
+        console.log(err);
         next(new http_error_1.HttpError('Invalid data', 422));
         return;
     }
@@ -106,6 +108,9 @@ exports.updatePlace = async (req, res, next) => {
     }
     if (!place) {
         return next(new http_error_1.HttpError('Could not find a place for the provided id', 404));
+    }
+    if (place.creator.toString() !== req.userData.userId.toString()) {
+        return next(new http_error_1.HttpError('User is not the creator of this place', http_status_code_1.default.UNAUTHORIZED));
     }
     try {
         place.title = title;
@@ -139,6 +144,9 @@ exports.deletePlace = async (req, res, next) => {
     }
     if (!user) {
         return next(new http_error_1.HttpError('Could not find a user with the creator id', 404));
+    }
+    if (place.creator.toString() !== req.userData.userId.toString()) {
+        return next(new http_error_1.HttpError('User is not the creator of this place', http_status_code_1.default.UNAUTHORIZED));
     }
     try {
         const sess = await mongoose_1.default.startSession();
