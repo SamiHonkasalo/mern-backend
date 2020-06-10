@@ -9,6 +9,7 @@ import {
 import { check } from 'express-validator';
 
 import fileUpload from '../middleware/file-upload';
+import aws from '../middleware/aws-s3';
 import checkAuth from '../middleware/check-auth';
 
 let router = express.Router();
@@ -22,6 +23,7 @@ router.use(checkAuth);
 router.post(
   '/',
   fileUpload.single('image'),
+  aws.awsSignup,
   [
     check('title').not().isEmpty(),
     check('description').isLength({ min: 5 }),
