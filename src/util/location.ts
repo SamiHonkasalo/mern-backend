@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { HttpError } from '../models/http-error';
-const API_KEY =
-  'pk.eyJ1IjoiaG9ua2tpcyIsImEiOiJjazBlc2tkOHcwYzhoM2xtcDQ3cHR2dmJ5In0.uLJ8KdNImk0vTYuhFbvZhA';
+import config from './config';
+const API_KEY = config.MAP_BOX_API;
 
 async function getCoordsForAddress(address: string) {
   let data;

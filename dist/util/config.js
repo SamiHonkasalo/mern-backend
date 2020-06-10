@@ -8,7 +8,8 @@ dotenv_1.default.config();
 const PORT = process.env.PORT || 5000;
 let MONGODB_URI = process.env.MONGODB_URI || '';
 let TOKEN_CODE = process.env.JWT_CODE || '';
-if (process.env.NODE_ENV === 'test') {
+let MAP_BOX_API = process.env.MAP_BOX_API;
+if (process.env.NODE_ENV === 'development') {
     MONGODB_URI = process.env.TEST_MONGODB_URI || '';
 }
-exports.default = { PORT, MONGODB_URI, TOKEN_CODE };
+exports.default = { PORT, MONGODB_URI, TOKEN_CODE, MAP_BOX_API };

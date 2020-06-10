@@ -69,7 +69,6 @@ exports.createPlace = async (req, res, next) => {
     let user;
     try {
         user = await user_1.User.findById(req.userData.userId);
-        console.log(user);
     }
     catch (e) {
         return next(new http_error_1.HttpError('Could not find user for the provided id', http_status_code_1.default.INTERNAL_SERVER_ERROR));
@@ -93,7 +92,6 @@ exports.createPlace = async (req, res, next) => {
 exports.updatePlace = async (req, res, next) => {
     const err = express_validator_1.validationResult(req);
     if (!err.isEmpty()) {
-        console.log(err);
         next(new http_error_1.HttpError('Invalid data', 422));
         return;
     }
@@ -160,8 +158,6 @@ exports.deletePlace = async (req, res, next) => {
     catch (e) {
         return next(new http_error_1.HttpError('Error removing the place from the database', 500));
     }
-    fs_1.default.unlink(imagePath, (err) => {
-        console.log(err);
-    });
+    fs_1.default.unlink(imagePath, (err) => { });
     res.status(200).json({ message: `Deleted place with id: ${placeId}` });
 };

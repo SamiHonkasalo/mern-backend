@@ -75,7 +75,6 @@ export const createPlace: RequestHandler = async (req, res, next) => {
   let user;
   try {
     user = await User.findById(req.userData.userId);
-    console.log(user);
   } catch (e) {
     return next(
       new HttpError(
@@ -116,7 +115,6 @@ export const createPlace: RequestHandler = async (req, res, next) => {
 export const updatePlace: RequestHandler = async (req, res, next) => {
   const err = validationResult(req);
   if (!err.isEmpty()) {
-    console.log(err);
     next(new HttpError('Invalid data', 422));
     return;
   }
@@ -202,8 +200,6 @@ export const deletePlace: RequestHandler = async (req, res, next) => {
       new HttpError('Error removing the place from the database', 500)
     );
   }
-  fs.unlink(imagePath, (err) => {
-    console.log(err);
-  });
+  fs.unlink(imagePath, (err) => {});
   res.status(200).json({ message: `Deleted place with id: ${placeId}` });
 };

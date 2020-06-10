@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const http_error_1 = require("../models/http-error");
-const API_KEY = 'pk.eyJ1IjoiaG9ua2tpcyIsImEiOiJjazBlc2tkOHcwYzhoM2xtcDQ3cHR2dmJ5In0.uLJ8KdNImk0vTYuhFbvZhA';
+const config_1 = __importDefault(require("./config"));
+const API_KEY = config_1.default.MAP_BOX_API;
 async function getCoordsForAddress(address) {
     let data;
     try {
